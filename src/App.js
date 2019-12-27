@@ -3,7 +3,8 @@ import {
   BrowserRouter as Router,
   Route,
   Link,
-  Redirect
+  Redirect,
+  useParams
 } from 'react-router-dom'
 
 const Nav = () => (
@@ -44,58 +45,87 @@ const Db = ({ routes }) => (
 )
 
 const Problems = () => <h3>Problems</h3>
+
+const Problem = () => {
+  const { id } = useParams()
+  return (
+    <h4>Id: {id}</h4>
+  )
+}
+
 const Submissions = () => <h3>Submissions</h3>
+
+const Submission = () => {
+  const { id } = useParams()
+  return (
+    <h4>Id: {id}</h4>
+  )
+}
 
 const Login = () => <h3>Login</h3>
 
 const RouteWithSubRoutes = (route) => (
-  <Route path={route.path} render={(props) => (
+  <Route exact={route.exact || false} path={route.path} render={(props) => (
     <route.component {...props} routes={route.routes} />
   )} />
 )
 
 class CustomRoute {
   constructor(arg) {
-    this.path = arg.path
-    this.component = arg.component
-    this.routes = arg.routes
+    return {
+      ...arg
+    }
   }
+}
+
+const subRoutes = (preffix) => {
+
+  return [
+    new CustomRoute({
+      path: `/${preffix}/problems`,
+      component: Problems,
+      exact: true
+    }),
+    new CustomRoute({
+      path: `/${preffix}/problems/:id`,
+      component: Problem
+    }),
+    new CustomRoute({
+      path: `/${preffix}/submissions`,
+      component: Submissions,
+      exact: true
+    }),
+    new CustomRoute({
+      path: `/${preffix}/submissions/:id`,
+      component: Submission
+    })
+  ]
 }
 
 const routes = [
   new CustomRoute({
     path: '/algorithm',
     component: Algorithm,
-    routes: [
-      new CustomRoute({
-        path: '/algorithm/problems',
-        component: Problems
-      }),
-      new CustomRoute({
-        path: '/algorithm/submissions',
-        component: Submissions
-      })
-    ]
+    routes: subRoutes('algorithm')
   }),
   new CustomRoute({
     path: '/db',
     component: Db,
-    routes: [
-      new CustomRoute({
-        path: '/db/problems',
-        component: Problems
-      }),
-      new CustomRoute({
-        path: '/db/submissions',
-        component: Submissions
-      })
-    ]
+    routes: subRoutes('db')
   }),
   new CustomRoute({
     path: '/login',
     component: Login
   })
 ]
+
+// Make protected and public pages
+
+// hanle two type not found page
+// 1. for route
+// 2. for subRoutes
+
+// Make dynamic sidebar (navs)
 
 class App extends React.Component {
   render() {
