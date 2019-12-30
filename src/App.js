@@ -4,7 +4,8 @@ import {
   Route,
   Link,
   Redirect,
-  useParams
+  useParams,
+  Switch
 } from 'react-router-dom'
 
 const Nav = () => (
@@ -14,18 +15,23 @@ const Nav = () => (
   </ul>
 )
 
+const SubNav = props => (
+  <ul>
+    <li><Link to={`/${props.slug}/problems`}>Problems</Link></li>
+    <li><Link to={`/${props.slug}/submissions`}>Submissions</Link></li>
+  </ul>
+)
+
 const Algorithm = ({ routes }) => (
   <div>
     <Nav />
     <h2>Algorithm</h2>
-    <ul>
-      <li><Link to="/algorithm/problems">Problems</Link></li>
-      <li><Link to="/algorithm/submissions">Submissions</Link></li>
-    </ul>
-
-    {routes.map((route) => (
-      <RouteWithSubRoutes key={route.path} {...route} />
-    ))}
+    <SubNav slug="algorithm" />
+    <Switch>
+      {routes.map((route) => (
+        <RouteWithSubRoutes key={route.path} {...route} />
+      ))}
+    </Switch>
   </div>
 )
 
@@ -33,14 +39,12 @@ const Db = ({ routes }) => (
   <div>
     <Nav />
     <h2>Db</h2>
-    <ul>
-      <li><Link to="/db/problems">Problems</Link></li>
-      <li><Link to="/db/submissions">Submissions</Link></li>
-    </ul>
-
-    {routes.map((route) => (
-      <RouteWithSubRoutes key={route.path} {...route} />
-    ))}
+    <SubNav slug="db" />
+    <Switch>
+      {routes.map((route) => (
+        <RouteWithSubRoutes key={route.path} {...route} />
+      ))}
+    </Switch>
   </div>
 )
 
@@ -63,6 +67,16 @@ const Submission = () => {
 }
 
 const Login = () => <h3>Login</h3>
+
+const NotFound = () => {
+  return (
+    <div>
+      <h3>
+        Not Found Page
+      </h3>
+    </div>
+  )
+}
 
 const RouteWithSubRoutes = (route) => (
   <Route exact={route.exact || false} path={route.path} render={(props) => (
@@ -98,7 +112,11 @@ const subRoutes = (preffix) => {
     new CustomRoute({
       path: `/${preffix}/submissions/:id`,
       component: Submission
-    })
+    }),
+    new CustomRoute({
+      path: `/${preffix}/*`,
+      component: NotFound
+    }),
   ]
 }
 
@@ -116,15 +134,21 @@ const routes = [
   new CustomRoute({
     path: '/login',
     component: Login
-  })
+  }),
+  new CustomRoute({
+    component: NotFound
+  }),
 ]
+
 
 // Make protected and public pages
 
-// hanle two type not found page
+// DONE
+// handle two type not found page
 // 1. for route
 // 2. for subRoutes
 
+// DONE
 // Make dynamic sidebar (navs)
 
 class App extends React.Component {
@@ -133,13 +157,14 @@ class App extends React.Component {
       <Router>
         <div>
 
-          {routes.map((route) => (
-            <RouteWithSubRoutes key={route.path} {...route} />
-          ))}
-
-          <Route exact path="/">
-            <Redirect to="/db" />
-          </Route>
+          <Switch>
+            <Route exact path="/">
+              <Redirect to="/db" />
+            </Route>
+            {routes.map((route) => (
+              <RouteWithSubRoutes key={route.path} {...route} />
+            ))}
+          </Switch>
         </div>
       </Router>
     )
