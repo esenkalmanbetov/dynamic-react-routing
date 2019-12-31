@@ -21,12 +21,23 @@ const fakeAuth = {
   }
 };
 
-const Nav = () => (
-  <ul>
-    <li><Link to="/db">Db</Link></li>
-    <li><Link to="/algorithm">Algorithm</Link></li>
-  </ul>
-)
+class Nav extends React.Component {
+  render() {
+    return (
+      <div>
+        <AuthButton />
+        <ul>
+          <li><Link to="/db">Db</Link></li>
+          <li><Link to="/algorithm">Algorithm</Link></li>
+          <li><Link to={{
+            pathname: '/login',
+            state: { from: this.props.location }
+          }}>Login</Link></li>
+        </ul>
+      </div>
+    )
+  }
+}
 
 const SubNav = props => (
   <ul>
@@ -35,22 +46,24 @@ const SubNav = props => (
   </ul>
 )
 
-const Algorithm = ({ routes }) => (
-  <div>
-    <Nav />
-    <h2>Algorithm</h2>
-    <SubNav slug="algorithm" />
-    <Switch>
-      {routes.map((route) => (
-        <RouteWithSubRoutes key={route.path} {...route} />
-      ))}
-    </Switch>
-  </div>
-)
+const Algorithm = ({ routes, location }) => {
+  return (
+    <div>
+      <Nav location={location} />
+      <h2>Algorithm</h2>
+      <SubNav slug="algorithm" />
+      <Switch>
+        {routes.map((route) => (
+          <RouteWithSubRoutes key={route.path} {...route} />
+        ))}
+      </Switch>
+    </div>
+  )
+}
 
-const Db = ({ routes }) => (
+const Db = ({ routes, location }) => (
   <div>
-    <Nav />
+    <Nav location={location}/>
     <h2>Db</h2>
     <SubNav slug="db" />
     <Switch>
@@ -80,9 +93,15 @@ const Submission = () => {
 }
 
 class Login extends React.Component {
-  state = {
-    redirectToReferrer: false
+
+  constructor(props) {
+    super(props)
+
+    this.state = {
+      redirectToReferrer: fakeAuth.isAuthenticated
+    }
   }
+
   login = () => {
     fakeAuth.authenticate(() => {
       this.setState(() => ({
@@ -119,14 +138,16 @@ const NotFound = () => {
 
 const PrivateRoute = (route) => {
   return (
-    <Route exact={route.exact || false} path={route.path} render={(props) => (
-      fakeAuth.isAuthenticated === true
-        ? <route.component {...props} routes={route.routes} />
-        : <Redirect to={{
-          pathname: '/login',
-          state: { from: props.location }
-        }} />
-    )} />
+    <Route exact={route.exact || false} path={route.path} render={(props) => {
+      return (
+        fakeAuth.isAuthenticated === true
+          ? <route.component {...props} routes={route.routes} />
+          : <Redirect to={{
+            pathname: '/login',
+            state: { from: props.location }
+          }} />
+      )
+    }} />
   )
 }
 
@@ -224,22 +245,18 @@ const routes = [
 class App extends React.Component {
   render() {
     return (
-      <div>
-        <Router>
-          <div>
-            <AuthButton />
-
-            <Switch>
-              <Route exact path="/">
-                <Redirect to="/algorithm" />
-              </Route>
-              {routes.map((route) => (
-                <RouteWithSubRoutes key={route.path} {...route} />
-              ))}
-            </Switch>
-          </div>
-        </Router>
-      </div>
+      <Router>
+        <div>
+          <Switch>
+            <Route exact path="/">
+              <Redirect to="/algorithm" />
+            </Route>
+            {routes.map((route) => (
+              <RouteWithSubRoutes key={route.path} {...route} />
+            ))}
+          </Switch>
+        </div>
+      </Router>
     )
   }
 }
