@@ -5,8 +5,21 @@ import {
   Link,
   Redirect,
   useParams,
-  Switch
+  Switch,
+  withRouter
 } from 'react-router-dom'
+
+const fakeAuth = {
+  isAuthenticated: false,
+  authenticate(cb) {
+    fakeAuth.isAuthenticated = true;
+    setTimeout(cb, 100); // fake async
+  },
+  signout(cb) {
+    fakeAuth.isAuthenticated = false;
+    setTimeout(cb, 100);
+  }
+};
 
 const Nav = () => (
   <ul>
@@ -66,7 +79,33 @@ const Submission = () => {
   )
 }
 
-const Login = () => <h3>Login</h3>
+class Login extends React.Component {
+  state = {
+    redirectToReferrer: false
+  }
+  login = () => {
+    fakeAuth.authenticate(() => {
+      this.setState(() => ({
+        redirectToReferrer: true
+      }))
+    })
+  }
+  render() {
+    const { from } = this.props.location.state || { from: { pathname: '/' } }
+    const { redirectToReferrer } = this.state
+
+    if (redirectToReferrer === true) {
+      return <Redirect to={from} />
+    }
+
+    return (
+      <div>
+        <p>You must log in to view the page</p>
+        <button onClick={this.login}>Log in</button>
+      </div>
+    )
+  }
+}
 
 const NotFound = () => {
   return (
@@ -78,11 +117,41 @@ const NotFound = () => {
   )
 }
 
-const RouteWithSubRoutes = (route) => (
-  <Route exact={route.exact || false} path={route.path} render={(props) => (
-    <route.component {...props} routes={route.routes} />
-  )} />
-)
+const PrivateRoute = (route) => {
+  return (
+    <Route exact={route.exact || false} path={route.path} render={(props) => (
+      fakeAuth.isAuthenticated === true
+        ? <route.component {...props} routes={route.routes} />
+        : <Redirect to={{
+          pathname: '/login',
+          state: { from: props.location }
+        }} />
+    )} />
+  )
+}
+
+const RouteWithSubRoutes = route => route.protected ?
+  (
+    <PrivateRoute {...route} />
+  )
+  :
+  (
+    <Route exact={route.exact || false} path={route.path} render={(props) => (
+      <route.component {...props} routes={route.routes} />
+    )} />
+  )
+
+const AuthButton = withRouter(({ history }) => (
+  fakeAuth.isAuthenticated ? (
+    <p>
+      Welcome! <button onClick={() => {
+        fakeAuth.signout(() => history.push('/'))
+      }}>Sign out</button>
+    </p>
+  ) : (
+      <p>You are not logged in.</p>
+    )
+))
 
 class CustomRoute {
   constructor(arg) {
@@ -129,7 +198,8 @@ const routes = [
   new CustomRoute({
     path: '/db',
     component: Db,
-    routes: subRoutes('db')
+    routes: subRoutes('db'),
+    protected: true
   }),
   new CustomRoute({
     path: '/login',
@@ -140,7 +210,7 @@ const routes = [
   }),
 ]
 
-
+// DONE
 // Make protected and public pages
 
 // DONE
@@ -154,19 +224,22 @@ const routes = [
 class App extends React.Component {
   render() {
     return (
-      <Router>
-        <div>
+      <div>
+        <Router>
+          <div>
+            <AuthButton />
 
-          <Switch>
-            <Route exact path="/">
-              <Redirect to="/db" />
-            </Route>
-            {routes.map((route) => (
-              <RouteWithSubRoutes key={route.path} {...route} />
-            ))}
-          </Switch>
-        </div>
-      </Router>
+            <Switch>
+              <Route exact path="/">
+                <Redirect to="/algorithm" />
+              </Route>
+              {routes.map((route) => (
+                <RouteWithSubRoutes key={route.path} {...route} />
+              ))}
+            </Switch>
+          </div>
+        </Router>
+      </div>
     )
   }
 }
